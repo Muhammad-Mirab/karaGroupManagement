@@ -9,4 +9,5 @@ I'm also into python and telegram bot development so if you have any idea that y
 
 📬 email: muhammadmirab@outlook.com\
 ☕️ Iranian buymeacoffe: [coffeete.ir](https://www.coffeete.ir/muhammadmirab) \
-🌏 Social Medias: @MuhammadMirab
+🌏 Social Medias: @MuhammadMirab \
+💼 Linked-in: [linkedin.com](https://www.linkedin.com/in/muhammad-mirab/) \
