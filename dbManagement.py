@@ -27,7 +27,7 @@ class dbManager:
     
     # it removes the first message's entry in database after editing the message and confirming the admin process
     def removeFirstMessageEditID(self, chatID):
-        self.cur.execute(f"DELETE FROM firstMessageQueue WHERE chatID = {chatID}")
+        self.cur.execute(f"DELETE FROM firstMessageQueue WHERE chatID = '{chatID}'")
         self.con.commit()
 
     # return a list of the groups the bot is active in

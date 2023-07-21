@@ -70,9 +70,9 @@ async def update_member(client, message):
      
         await app.edit_message_text(message.chat.id, int(dbm.getFirstMessageEditID(dbm.getChatID(message.chat.id))[0]), 'ربات با موفقیت در گروه فعال شد.\n\n ادمین های شناسایی شده:\n%s' % final)
         # removing the first message which was edited to admin confirmation
-        dbm.removeFirstMessageEditID(message.chat.id)
+        dbm.removeFirstMessageEditID(dbm.getChatID(message.chat.id))
 # @app.on_message(filters.text & filters.private)
 # async def echo(client, message):
 #     await message.reply(message.text)
-
-app.run()  # Automatically start() and idle()
+if __name__ == "__main__":
+    app.run()  # Automatically start() and idle()
