@@ -114,9 +114,8 @@ async def answer(client, callback_query):
         else:
             await app.answer_callback_query(callback_query.id, 'برای استفاده از این گزینه باید ادمین باشید.', show_alert=False)
     
-
 # @app.on_message(filters.text & filters.private)
 # async def echo(client, message):
 #     await message.reply(message.text)
-
-app.run()  # Automatically start() and idle()
+if __name__ == "__main__":
+    app.run()  # Automatically start() and idle()
