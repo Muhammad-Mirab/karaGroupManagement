@@ -5,16 +5,17 @@ class dbManager:
     def __init__(self) -> None:
         self.con = sqlite3.connect("KaraGroups.db", check_same_thread = False)
         self.cur = self.con.cursor()
-
-        # cur.execute("INSERT INTO groupSettings(groupID, welcomeMessage) VALUES ('1', 'سلام، همکار / دوست گرامی [یوزر جدید] به تیم [اسم گروه] خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)') ")
-        # con.commit()
+        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, isWelcomeEnabled STRING, welcomeMessage STRING)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS firstMessageQueue(chatID STRING, messageID STRING)")
+        # self.cur.execute("INSERT OR IGNORE INTO groupSettings(groupID, welcomeMessage) VALUES ('1', 'سلام، همکار / دوست گرامی [یوزر جدید] به تیم [اسم گروه] خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)') ")
+        # self.con.commit()
     # converts numeral chat id into sth the database can handle
     def getChatID(self, groupId):
         chat_idDB = str(groupId).split("-")
         # checks if the chat id value is negative if not will return the exact same thing
         return f"Minus{chat_idDB[1]}" if chat_idDB[0] == "" else chat_idDB[0]
+    
     # adds the bot's first message to firstMessageQueue table in the db
-
     def firstMessageEditID(self, chatID, messageID):
         self.cur.execute(f"INSERT or IGNORE INTO firstMessageQueue VALUES ('{chatID}', '{messageID}')")
         self.con.commit()

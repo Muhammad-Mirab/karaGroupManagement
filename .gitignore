@@ -2,3 +2,4 @@ env/
 KaraGroups.db
 karaGroupManagement.session
 credentials.txt
+*.bak

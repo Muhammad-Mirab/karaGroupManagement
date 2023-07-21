@@ -60,7 +60,6 @@ async def services(client, message):
 @app.on_chat_member_updated()
 async def update_member(client, message):
     member = await app.get_chat_member(message.chat.id, "me")
-    print(member.status)
     # checking if the bot is upgraded to admin
     if member.status == enums.ChatMemberStatus.ADMINISTRATOR:
         final = ''
