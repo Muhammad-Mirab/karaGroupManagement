@@ -61,7 +61,6 @@ async def services(client, message):
 @app.on_chat_member_updated()
 async def update_member(client, message):
     member = await app.get_chat_member(message.chat.id, "me")
-
     if message.chat.type == enums.ChatType.CHANNEL:
         if member.status == enums.ChatMemberStatus.ADMINISTRATOR and message.new_chat_member.privileges.can_post_messages:
             await app.send_message(message.new_chat_member.promoted_by.id, 'ربات با موفقیت در کانال ادمین شد')
@@ -69,9 +68,7 @@ async def update_member(client, message):
         elif not message.new_chat_member.privileges.can_post_messages:
             await app.send_message(message.new_chat_member.promoted_by.id, 'لطفا ابتدا ربات را از کانال حذف و دوباره اضافه کنید و توجه کنید که باید هنگام اضافه کردن ربات به کانال دسترسی ارسال پیام را به ربات بدهید.')
 
-
-    # checking if the bot is upgraded to admin
-    elif message.chat.type == enums.ChatType.GROUP:
+    elif message.chat.type == enums.ChatType.GROUP or message.chat.type == enums.ChatType.SUPERGROUP:
         if member.status == enums.ChatMemberStatus.ADMINISTRATOR:
             final = ''
             
