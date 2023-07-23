@@ -4,6 +4,9 @@
 from pyrogram import Client, filters, enums, errors
 import dbManagement as dbManager
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import requests
+from datetool import calendar
+from datetime import datetime
 
 dbm = dbManager.dbManager()
 
@@ -100,8 +103,6 @@ async def update_member(client, message):
         except errors.exceptions.not_acceptable_406.ChannelPrivate:
             pass
 
-    
-
 @app.on_message(filters=filters.private & filters.command("start"))
 async def private(client, message):
     text = message.text
@@ -124,6 +125,45 @@ async def private(client, message):
         else:
             await app.send_message(message.from_user.id, 'شما دسترسی کافی را برای انجام این کار ندارید.')
 
+
+@app.on_message(filters.group)
+async def group_messages(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    text = message.text
+    try:
+        listed_text = text.split(' ')
+    except AttributeError: pass
+
+    if text == 'تاریخ' or text == 'date':
+        response = requests.get('https://api.keybit.ir/time/')
+
+        resp = response.json()
+
+        time = resp['time24']['full']['en']
+        day = resp['date']['day']['name']
+        month = resp['date']['month']['name']
+        year = resp['date']['year']['number']['en']
+        days_left = resp['date']['year']['left']['days']['en']
+        year_animal = resp['date']['year']['animal']
+        leapyear = resp['date']['year']['leapyear']
+
+        data = f'ساعت: {time} ⏰\n{day} {month} {year} 📅\n امسال {leapyear} است.\n\nروز های باقیمانده تا پایان سال: {days_left} ⏲\nحیوان سال: {year_animal}'
+
+        await app.send_message(chat_id, data, reply_to_message_id = message_id)
+
+    elif listed_text[0] == 'تقویم' or listed_text[0] == 'calendar':
+        if listed_text[1:] != []: format = int(listed_text[1])
+        else: format = 1
+
+        await app.send_message(chat_id, f'<pre>{calendar(format)}</pre language="python">', parse_mode=enums.ParseMode.HTML, reply_to_message_id = message_id)
+
+    elif text == 'ساعت' or text == 'زمان' or text == 'time':
+        await app.send_message(chat_id, datetime.now().strftime('%H:%M:%S'), reply_to_message_id = message_id)
+
+    elif text == 'مشخصات گروه' or text == 'info':
+        chat = await app.get_chat(chat_id)
+        await app.send_message(chat_id, f'نام گروه: {chat.title}\nآیدی عددی گروه: {chat.id}\nتعداد اعضا: {chat.members_count}\nلینک گروه: {chat.invite_link if not chat.invite_link == None else "لینک دعوت وجود ندارد"}', reply_to_message_id = message_id, disable_web_page_preview=True)
 
 
 if __name__ == "__main__":
