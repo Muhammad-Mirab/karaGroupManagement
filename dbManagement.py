@@ -5,7 +5,7 @@ class dbManager:
     def __init__(self) -> None:
         self.con = sqlite3.connect("KaraGroups.db", check_same_thread = False)
         self.cur = self.con.cursor()
-        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, isWelcomeEnabled STRING, welcomeMessage STRING)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, isWelcomeEnabled STRING, welcomeMessage STRING, userPositions STRING)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS firstMessageQueue(chatID STRING, messageID STRING)")
         # self.cur.execute("INSERT OR IGNORE INTO groupSettings(groupID, welcomeMessage) VALUES ('1', 'سلام، همکار / دوست گرامی [یوزر جدید] به تیم [اسم گروه] خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)') ")
         # self.con.commit()
@@ -35,11 +35,20 @@ class dbManager:
         self.cur.execute("SELECT groupID FROM groupSettings")
         return [i[0] for i in self.cur.fetchall()]
     
+    def getUserPositionDict(self, chatID):
+        self.cur.execute(f"SELECT userPositions FROM groupSettings WHERE groupID='{chatID}'")
+        return [i[0] for i in self.cur.fetchall()]
+    
+    # def getUsersTaggedInAMessage(self, message):
+    #     for i, j in enumerate(message):
+
+    
     # adds the group into groupSettings table which will hold all the admin related settings of the group
     def addToGroupSettings(self, groupID):
         defaultIsWelcomeEnabled = 1
         defaultWelcomeMessage = f'سلام، همکار / دوست گرامی [کاربر] به تیم خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)'
-        self.cur.execute(f"INSERT or IGNORE INTO groupSettings VALUES ('{groupID}', {defaultIsWelcomeEnabled}, '{defaultWelcomeMessage}')")
+        userPositions = {}
+        self.cur.execute(f"INSERT or IGNORE INTO groupSettings VALUES ('{groupID}', {defaultIsWelcomeEnabled}, '{defaultWelcomeMessage}', '{str(userPositions)}')")
         self.con.commit()
 
     # using the chatID and attribute(which is the name of the value in db e.g. "isWelcomeEnabled") will check if the admin has disabled a feature

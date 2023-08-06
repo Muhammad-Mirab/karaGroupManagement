@@ -3,7 +3,8 @@
 # Kara Group Management Bot
 from pyrogram import Client, filters, enums
 import dbManagement as dbManager
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, MessageEntity
+import ast
 
 dbm = dbManager.dbManager()
 
@@ -17,6 +18,7 @@ async def services(client, message):
     chatID = dbm.getChatID(message.chat.id)
     # availableGroups is the variable in which the groups that the bot is already added to are listed
     availableGroups = dbm.getAvailableGroupsID()
+    print(availableGroups)
 
     try:
         if message.chat.type != "private":
@@ -24,6 +26,7 @@ async def services(client, message):
             if new_member_status.is_self == True:
                 # checks wheter it was previously added to this group or not 
                 if chatID not in availableGroups:
+                    print("hi")
                     dbm.addToGroupSettings(chatID)
 
                 toBeEditedMessage = await app.send_message(message.chat.id, "ربات به گروه افزوده شد☘️\n\n» جهت آغاز فرآیند نصب و پیکربندی \nربات را ادمین کامل نمایید🌱")
@@ -87,6 +90,40 @@ async def update_member(client, message):
             # removing the first message which was edited to admin confirmation
             dbm.removeFirstMessageEditID(dbm.getChatID(message.chat.id))
 
+@app.on_message(filters.text & filters.group)
+async def userTitles(client, message):
+    theMessage = message.text.split(" ")
+    positionTitles = ast.literal_eval(dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0])
+    title = ""
+    if theMessage[0] == "تعیین" and theMessage[1] == "موقعیت":
+        for i in range(2): theMessage.pop(0)
+        titleMessage = ' '.join(theMessage)
+        numberOfTags = [t for t in titleMessage if t.find("@") == 0]
+        if len(numberOfTags) != 0:
+            taggedPeople = []
+            for entity in range(len(message.entities)):
+                offset = message.entities[entity].offset
+                taggedPeople.append(message.text[ offset : offset + message.entities[0].length])
+            taggedPeopleID = await app.get_users(taggedPeople)
+            for i in taggedPeople: theMessage.remove(i)
+            title = " ".join(theMessage)
+            print(title)
+            for i in taggedPeople:
+                if i not in positionTitles:
+                    for i in taggedPeopleID:
+                        await app.promote_chat_member(message.chat.id, i.id)
+                        await app.set_administrator_title(message.chat.id, i.id, title)
+                else: 
+                    await message.reply("موقعیت این کاربر از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
+            await message.reply("عملیات با موفقیت نصفه انجام شد")
+        else:
+            #check for who the message is replied to
+            pass
+        # print(message)
+        # if len(titleMessage) > 16:
+        #     await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
+        # else:
+        #     positionTitles = ast.literal_eval(dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0])
 
 @app.on_callback_query()
 async def answer(client, callback_query):
