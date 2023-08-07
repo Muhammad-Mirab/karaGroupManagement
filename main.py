@@ -93,9 +93,10 @@ async def update_member(client, message):
 @app.on_message(filters.text & filters.group)
 async def userTitles(client, message):
     theMessage = message.text.split(" ")
-    positionTitles = ast.literal_eval(dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0])
-    title = ""
     if theMessage[0] == "تعیین" and theMessage[1] == "موقعیت":
+        title = ""
+        pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
+        positionTitles = ast.literal_eval(pt) if pt != "" else {}
         for i in range(2): theMessage.pop(0)
         titleMessage = ' '.join(theMessage)
         numberOfTags = [t for t in titleMessage if t.find("@") == 0]
@@ -107,23 +108,34 @@ async def userTitles(client, message):
             taggedPeopleID = await app.get_users(taggedPeople)
             for i in taggedPeople: theMessage.remove(i)
             title = " ".join(theMessage)
-            print(title)
-            for i in taggedPeople:
-                if i not in positionTitles:
-                    for i in taggedPeopleID:
+            if len(title) > 16:
+                await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
+            else:
+                for j, i in enumerate(taggedPeopleID):
+                    if i.id not in positionTitles:
                         await app.promote_chat_member(message.chat.id, i.id)
                         await app.set_administrator_title(message.chat.id, i.id, title)
-                else: 
-                    await message.reply("موقعیت این کاربر از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
-            await message.reply("عملیات با موفقیت نصفه انجام شد")
+                        positionTitles[i.id] = title
+                        await message.reply(f"موقعیت موردنظر '{title}' برای کاربر {taggedPeople[j]} با موفقیت ثبت شد✅")
+                    else: 
+                        await message.reply(f"موقعیت کاربر {taggedPeople[j]} از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
         else:
             #check for who the message is replied to
-            pass
-        # print(message)
-        # if len(titleMessage) > 16:
-        #     await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
-        # else:
-        #     positionTitles = ast.literal_eval(dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0])
+            title = ' '.join(theMessage)
+            userID = message.reply_to_message.from_user.id
+            userName = message.reply_to_message.from_user.username
+            if len(title) > 16:
+                await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
+            else:
+                if userID not in positionTitles:
+                    await app.promote_chat_member(message.chat.id, userID)
+                    await app.set_administrator_title(message.chat.id, userID, title)
+                    positionTitles[userID] = title
+                    await message.reply(f"موقعیت موردنظر '{title}' برای کاربر @{userName} با موفقیت ثبت شد✅")
+                else: 
+                    await message.reply(f"موقعیت کاربر {userName} از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
+
+        dbm.updateUserPositionDict(message.chat.id, positionTitles)
 
 @app.on_callback_query()
 async def answer(client, callback_query):

@@ -39,10 +39,10 @@ class dbManager:
         self.cur.execute(f"SELECT userPositions FROM groupSettings WHERE groupID='{chatID}'")
         return [i[0] for i in self.cur.fetchall()]
     
-    # def getUsersTaggedInAMessage(self, message):
-    #     for i, j in enumerate(message):
+    def updateUserPositionDict(self, chatID, positionTitles):
+        self.cur.execute(f'UPDATE groupSettings SET userPositions = "{positionTitles}" WHERE groupID=\'{self.getChatID(chatID)}\'')
+        self.con.commit()
 
-    
     # adds the group into groupSettings table which will hold all the admin related settings of the group
     def addToGroupSettings(self, groupID):
         defaultIsWelcomeEnabled = 1
