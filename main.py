@@ -93,10 +93,10 @@ async def update_member(client, message):
 @app.on_message(filters.text & filters.group)
 async def userTitles(client, message):
     theMessage = message.text.split(" ")
+    pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
+    positionTitles = ast.literal_eval(pt) if pt != "" else {}
     if theMessage[0] == "تعیین" and theMessage[1] == "موقعیت":
         title = ""
-        pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
-        positionTitles = ast.literal_eval(pt) if pt != "" else {}
         for i in range(2): theMessage.pop(0)
         titleMessage = ' '.join(theMessage)
         numberOfTags = [t for t in titleMessage if t.find("@") == 0]
@@ -128,7 +128,7 @@ async def userTitles(client, message):
                 await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
             else:
                 if userID not in positionTitles:
-                    await app.promote_chat_member(message.chat.id, userID)
+                    await app.promote_chat_member(message.chat.id, userID) # if user is promoted to admin by another user this will throw an exception
                     await app.set_administrator_title(message.chat.id, userID, title)
                     positionTitles[userID] = title
                     await message.reply(f"موقعیت موردنظر '{title}' برای کاربر @{userName} با موفقیت ثبت شد✅")
@@ -136,6 +136,59 @@ async def userTitles(client, message):
                     await message.reply(f"موقعیت کاربر {userName} از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
 
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
+    elif theMessage[0] == "تغییر" and theMessage[1] == "موقعیت":
+        title = ""
+        for i in range(2): theMessage.pop(0)
+        titleMessage = ' '.join(theMessage)
+        numberOfTags = [t for t in titleMessage if t.find("@") == 0]
+        if len(numberOfTags) != 0:
+            taggedPeople = []
+            for entity in range(len(message.entities)):
+                offset = message.entities[entity].offset
+                taggedPeople.append(message.text[ offset : offset + message.entities[0].length])
+            taggedPeopleID = await app.get_users(taggedPeople)
+            for i in taggedPeople: theMessage.remove(i)
+            title = " ".join(theMessage)
+            if len(title) > 16:
+                await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
+            else:
+                for j, i in enumerate(taggedPeopleID):
+                    if i.id in positionTitles:
+                        await app.promote_chat_member(message.chat.id, i.id)
+                        await app.set_administrator_title(message.chat.id, i.id, title)
+                        positionTitles[i.id] = title
+                        await message.reply(f"موقعیت موردنظر '{title}' برای کاربر {taggedPeople[j]} با موفقیت تغییر کرد✅")
+                    else:
+                        await message.reply(f"موقعیت شغلی‌ای برای کاربر موردنظر ثبت نشده است❌")
+        else:
+            #check for who the message is replied to
+            title = ' '.join(theMessage)
+            userID = message.reply_to_message.from_user.id
+            userName = message.reply_to_message.from_user.username
+            if len(title) > 16:
+                await message.reply("موقعیت فرد نمی‌تواند بیشتر از 16 کاراکتر باشد❌")
+            else:
+                if userID not in positionTitles:
+                    await app.promote_chat_member(message.chat.id, userID)
+                    await app.set_administrator_title(message.chat.id, userID, title)
+                    positionTitles[userID] = title
+                    await message.reply(f"موقعیت موردنظر '{title}' برای کاربر {taggedPeople[j]} با موفقیت تغییر کرد✅")
+                else:
+                    await message.reply(f"موقعیت شغلی‌ای برای کاربر موردنظر ثبت نشده است❌")
+
+        dbm.updateUserPositionDict(message.chat.id, positionTitles)
+    elif theMessage[0] == "موقعیت" and theMessage[1] == "کاربران":
+        users = positionTitles.keys()
+        userInfos = await app.get_users(users)
+        usernames = [i.username for i in userInfos]
+        titles = positionTitles.values()
+        userTitleText = "موقعیت های شغلی افراد تنظیم شده حاضر در گروه☘️: \n"
+        for i, j in zip(usernames, titles): userTitleText += f"@{i}: {j}\n"
+        await message.reply(userTitleText)
+
+        
+
+
 
 @app.on_callback_query()
 async def answer(client, callback_query):
