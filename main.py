@@ -84,7 +84,7 @@ async def update_member(client, message):
                     await app.send_message(message.new_chat_member.promoted_by.id, 'لطفا ابتدا ربات را از کانال حذف و دوباره اضافه کنید و توجه کنید که باید هنگام اضافه کردن ربات به کانال دسترسی ارسال پیام را به ربات بدهید.')
 
             elif message.chat.type == enums.ChatType.GROUP or message.chat.type == enums.ChatType.SUPERGROUP:
-                if member.status == enums.ChatMemberStatus.ADMINISTRATOR:
+                if member.status == enums.ChatMemberStatus.ADMINISTRATOR and member.user == message.new_chat_member.user:
                     final = ''
                     
                     # getting the admin users to display them in the message
@@ -105,13 +105,40 @@ async def update_member(client, message):
             pass
 
 
+@app.on_message(filters=filters.private & filters.command("start"))
+async def private(client, message):
+    text = message.text
+
+    text = text.replace('/start ', '')
+    if text == 'Continue_config_-1001908542984':
+        chat_id = text.replace('Continue_config_', '')
+        admins = []
+        async for admin in app.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
+            admins.append(admin.user.id)
+
+        if message.from_user.id in admins:
+            await app.send_message(message.from_user.id, 'با استفاده از این لنیک زیر ربات را در کانال مورد نظر ادمین کنید.', reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton('افزودن ربات به کانال', url='https://t.me/curlymoderaotbot?startchannel=true')
+                    ],
+                ]
+            ))
+        else:
+            await app.send_message(message.from_user.id, 'شما دسترسی کافی را برای انجام این کار ندارید.')
+
+
 @app.on_message(filters.text & filters.group)
-async def userTitles(client, message):
+async def group_messages(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    text = message.text
     theMessage = message.text.split(" ")
-    pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
-    positionTitles = ast.literal_eval(pt) if pt != "" else {}
+
     if theMessage[0] == "تعیین" and theMessage[1] == "موقعیت":
         title = ""
+        pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
+        positionTitles = ast.literal_eval(pt) if pt != "" else {}
         for i in range(2): theMessage.pop(0)
         titleMessage = ' '.join(theMessage)
         numberOfTags = [t for t in titleMessage if t.find("@") == 0]
@@ -153,6 +180,8 @@ async def userTitles(client, message):
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
     elif theMessage[0] == "تغییر" and theMessage[1] == "موقعیت":
         title = ""
+        pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
+        positionTitles = ast.literal_eval(pt) if pt != "" else {}
         for i in range(2): theMessage.pop(0)
         titleMessage = ' '.join(theMessage)
         numberOfTags = [t for t in titleMessage if t.find("@") == 0]
@@ -193,6 +222,8 @@ async def userTitles(client, message):
 
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
     elif theMessage[0] == "موقعیت" and theMessage[1] == "کاربران":
+        pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
+        positionTitles = ast.literal_eval(pt) if pt != "" else {}
         users = positionTitles.keys()
         userInfos = await app.get_users(users)
         usernames = [i.username for i in userInfos]
@@ -200,38 +231,6 @@ async def userTitles(client, message):
         userTitleText = "موقعیت های شغلی افراد تنظیم شده حاضر در گروه☘️: \n"
         for i, j in zip(usernames, titles): userTitleText += f"@{i}: {j}\n"
         await message.reply(userTitleText)
-
-@app.on_message(filters=filters.private & filters.command("start"))
-async def private(client, message):
-    text = message.text
-
-    text = text.replace('/start ', '')
-    if text == 'Continue_config_-1001908542984':
-        chat_id = text.replace('Continue_config_', '')
-        admins = []
-        async for admin in app.get_chat_members(chat_id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
-            admins.append(admin.user.id)
-
-        if message.from_user.id in admins:
-            await app.send_message(message.from_user.id, 'با استفاده از این لنیک زیر ربات را در کانال مورد نظر ادمین کنید.', reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton('افزودن ربات به کانال', url='https://t.me/curlymoderaotbot?startchannel=true')
-                    ],
-                ]
-            ))
-        else:
-            await app.send_message(message.from_user.id, 'شما دسترسی کافی را برای انجام این کار ندارید.')
-
-
-@app.on_message(filters.group)
-async def group_messages(_, message):
-    chat_id = message.chat.id
-    message_id = message.id
-    text = message.text
-    try:
-        listed_text = text.split(' ')
-    except AttributeError: pass
 
     if text == 'تاریخ' or text == 'date':
         response = requests.get('https://api.keybit.ir/time/')
@@ -250,8 +249,8 @@ async def group_messages(_, message):
 
         await app.send_message(chat_id, data, reply_to_message_id = message_id)
 
-    elif listed_text[0] == 'تقویم' or listed_text[0] == 'calendar':
-        if listed_text[1:] != []: format = int(listed_text[1])
+    elif theMessage[0] == 'تقویم' or theMessage[0] == 'calendar':
+        if theMessage[1:] != []: format = int(theMessage[1])
         else: format = 1
 
         await app.send_message(chat_id, f'<pre>{calendar(format)}</pre language="python">', parse_mode=enums.ParseMode.HTML, reply_to_message_id = message_id)
