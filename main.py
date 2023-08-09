@@ -12,7 +12,7 @@ dbm = dbManager.dbManager()
 
 #Connect code to your bot
 #app = Client('karaGroupManagement', api_id= your api id, api_hash= 'your api hash', bot_token= 'your bot token')
-app = Client('karaGroupManagement')
+app = Client('karaGroupManagement', api_id = 13925520, api_hash = '46b9f7154528a3098c259adaea7f81cd', bot_token = '5088122756:AAGQQIREDKZEoU7PRIkXlejMINcK4U-irv4')
 
 # the stage where bot is added and becomes an admin
 @app.on_message(filters.service)
@@ -70,8 +70,6 @@ async def update_member(client, message):
         if message.old_chat_member != None and message.old_chat_member.privilegs == None:
             pass
 
-            
-
     except AttributeError:
         try:
             member = await app.get_chat_member(message.chat.id, "me")
@@ -98,6 +96,8 @@ async def update_member(client, message):
                                         InlineKeyboardButton('ادامه پیکربندی', url = f'https://t.me/curlymoderaotbot?start=Continue_config_{message.chat.id}')
                                     ],
                                 ]))
+
+                    
                     
                     # removing the first message which was edited to admin confirmation
                     dbm.removeFirstMessageEditID(dbm.getChatID(message.chat.id))
@@ -132,6 +132,7 @@ async def private(client, message):
 async def group_messages(_, message):
     chat_id = message.chat.id
     message_id = message.id
+    user_id = message.from_user.id
     text = message.text
     theMessage = message.text.split(" ")
 
@@ -178,6 +179,7 @@ async def group_messages(_, message):
                     await message.reply(f"موقعیت کاربر {userName} از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
 
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
+    
     elif theMessage[0] == "تغییر" and theMessage[1] == "موقعیت":
         title = ""
         pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
@@ -221,6 +223,7 @@ async def group_messages(_, message):
                     await message.reply(f"موقعیت شغلی‌ای برای کاربر موردنظر ثبت نشده است❌")
 
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
+    
     elif theMessage[0] == "موقعیت" and theMessage[1] == "کاربران":
         pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
         positionTitles = ast.literal_eval(pt) if pt != "" else {}
@@ -262,6 +265,105 @@ async def group_messages(_, message):
         chat = await app.get_chat(chat_id)
         await app.send_message(chat_id, f'نام گروه: {chat.title}\nآیدی عددی گروه: {chat.id}\nتعداد اعضا: {chat.members_count}\nلینک گروه: {chat.invite_link if not chat.invite_link == None else "لینک دعوت وجود ندارد"}', reply_to_message_id = message_id, disable_web_page_preview=True)
 
+    elif text == 'پنل':
+        await app.send_message(chat_id, "لطفا یکی از گزینه های زیر را انتخاب کنید", reply_to_message_id = message_id, reply_markup=InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("تنظیمات", callback_data="setting-%i" % user_id),
+                InlineKeyboardButton("راهنما", callback_data="help-%i" % user_id),
+            ],
+            [
+                InlineKeyboardButton("ارتباط با ما", callback_data="contact_us-%i" % user_id),
+                InlineKeyboardButton('بستن پنل', callback_data='close-%i' % user_id),
+            ]
+        ]
+        ))
+
+@app.on_callback_query()
+async def answer(_, callback_query):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data.split('-')
+    inline_id = int(callback_query.message.id)
+
+    if data[0] == 'setting':
+
+        settings = dbm.GetSettings(chat_id) 
+        """
+        [0] --> imoji
+        [1] --> link
+        [2] --> git
+        [3] --> sticker
+        [4] --> picture
+        [5] --> video
+        [6] --> music
+        [7] --> file
+        [8] --> englsih
+        [9] --> bad_words
+        0 means disable and 1 means True
+        """
+
+        await app.edit_message_text(chat_id, inline_id, 'به بخش تنظیمات خوش آمدید.', reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('ایموجی✅' if settings[0] == 1 else 'ایموجی❌', callback_data='test'),
+                    InlineKeyboardButton('لینک✅' if settings[1] == 1 else 'لینک❌', callback_data='test')
+                ],
+                [
+                    InlineKeyboardButton('گیف✅' if settings[2] == 1 else 'گیف❌', callback_data='test'),
+                    InlineKeyboardButton('استیکر✅' if settings[3] == 1 else 'استیکر❌', callback_data='test')
+                ],
+                [
+                    InlineKeyboardButton('عکس✅' if settings[4] == 1 else 'عکس❌', callback_data='test'),
+                    InlineKeyboardButton('فیلم✅' if settings[5] == 1 else 'فیلم❌', callback_data='test')
+                ],
+                [
+                    InlineKeyboardButton('آهنگ✅' if settings[6] == 1 else 'آهنگ❌', callback_data='test'),
+                    InlineKeyboardButton('فایل✅' if settings[7] == 1 else 'فایل❌', callback_data='test')                       
+                ],
+                [
+                    InlineKeyboardButton('انگلیسی✅' if settings[8] == 1 else 'انگلیسی❌', callback_data='test'),
+                    InlineKeyboardButton('کلمات نامناسب✅' if settings[9] == 1 else 'انگلیسی❌', callback_data='test')
+                ],
+                [
+                    InlineKeyboardButton('بازگشت', callback_data = f'back_to_main_menu-{data[1]}')
+                ]
+            ]
+        ))
+
+    elif data[0] == 'help':
+        await app.edit_message_text(chat_id, inline_id, 'به بخش راهنماخوش آمدید', reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('بازگشت', callback_data = f'back_to_main_menu-{data[1]}')
+                ]
+            ]
+        ))
+
+    elif data[0] == 'contact_us':
+        await app.edit_message_text(chat_id, inline_id, 'به بخش درباره ما خوش آمدید.', reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('بازگشت', callback_data = f'back_to_main_menu-{data[1]}')
+                ]
+            ]
+        ))
+
+    elif data[0] == 'close':
+        await app.edit_message_text(chat_id, inline_id, 'پنل با موفقیت بسته شد✅')
+
+    elif data[0] == 'back_to_main_menu':
+        await app.edit_message_text(chat_id, inline_id, "لطفا یکی از گزینه های زیر را انتخاب کنید", reply_markup=InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("تنظیمات", callback_data="setting-%s" % data[1]),
+                InlineKeyboardButton("راهنما", callback_data="help-%s" % data[1]),
+            ],
+            [
+                InlineKeyboardButton("ارتباط با ما", callback_data="contact_us-%s" % data[1]),
+                InlineKeyboardButton('بستن پنل', callback_data='close-%s' % data[1]),
+            ]
+        ]
+        ))
 
 if __name__ == "__main__":
     print('Bot is starting ...')
