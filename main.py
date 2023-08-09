@@ -20,7 +20,6 @@ async def services(client, message):
     chatID = dbm.getChatID(message.chat.id)
     # availableGroups is the variable in which the groups that the bot is already added to are listed
     availableGroups = dbm.getAvailableGroupsID()
-    print(availableGroups)
 
     try:
         if message.chat.type != "private":
@@ -28,7 +27,6 @@ async def services(client, message):
             if new_member_status.is_self == True:
                 # checks wheter it was previously added to this group or not 
                 if chatID not in availableGroups:
-                    print("hi")
                     dbm.addToGroupSettings(chatID)
 
                 toBeEditedMessage = await app.send_message(message.chat.id, "ربات به گروه افزوده شد☘️\n\n» جهت آغاز فرآیند نصب و پیکربندی \nربات را ادمین کامل نمایید🌱")
@@ -102,6 +100,9 @@ async def update_member(client, message):
                     # removing the first message which was edited to admin confirmation
                     dbm.removeFirstMessageEditID(dbm.getChatID(message.chat.id))
         except errors.exceptions.not_acceptable_406.ChannelPrivate:
+            pass
+
+        except:
             pass
 
 
