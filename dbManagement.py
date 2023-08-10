@@ -5,7 +5,7 @@ class dbManager:
     def __init__(self) -> None:
         self.con = sqlite3.connect("KaraGroups.db", check_same_thread = False)
         self.cur = self.con.cursor()
-        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, isWelcomeEnabled STRING, welcomeMessage STRING, userPositions STRING)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, isWelcomeEnabled STRING, welcomeMessage STRING, userPositions STRING, imoji INTEGER, link INTEGER, gif INTEGER, sticker INTEGER, picture INTEGER, video INTEGER, music INTEGER, file INTEGER, english INTEGER, bad_words INTEGER)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS firstMessageQueue(chatID STRING, messageID STRING)")
         # self.cur.execute("INSERT OR IGNORE INTO groupSettings(groupID, welcomeMessage) VALUES ('1', 'سلام، همکار / دوست گرامی [یوزر جدید] به تیم [اسم گروه] خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)') ")
         # self.con.commit()
@@ -48,10 +48,28 @@ class dbManager:
         defaultIsWelcomeEnabled = 1
         defaultWelcomeMessage = f'سلام، همکار / دوست گرامی [کاربر] به تیم خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)'
         userPositions = {}
-        self.cur.execute(f"INSERT or IGNORE INTO groupSettings VALUES ('{groupID}', {defaultIsWelcomeEnabled}, '{defaultWelcomeMessage}', '{str(userPositions)}')")
+        self.cur.execute(f"INSERT or IGNORE INTO groupSettings VALUES ('{groupID}', {defaultIsWelcomeEnabled}, '{defaultWelcomeMessage}', '{str(userPositions)}', 1, 1, 1, 1, 1, 1, 0, 0, 1, 0)")
         self.con.commit()
 
     # using the chatID and attribute(which is the name of the value in db e.g. "isWelcomeEnabled") will check if the admin has disabled a feature
     def checkWetherGroupSettingIsSet(self, chatID, attribute):
         self.cur.execute(f"SELECT {attribute} FROM groupSettings WHERE groupID='{chatID}'")
         return [i[0] for i in self.cur.fetchall()]
+
+    def GetSettings(self, chat_ID):
+        self.cur.execute(f"SELECT *  FROM  groupSettings Where groupID='Minus{str(chat_ID).replace('-', '')}'")
+        return self.cur.fetchall()[0][4:]
+    
+    def UpdateSettins(self, chat_id, subject):
+        settings = ['imoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']
+        if subject in settings:
+            # print(dbManager.GetSettings(self, chat_id)[settings.index(subject)])
+            # print(f'{1 if dbManager.GetSettings(self, chat_id)[settings.index(subject) - 4] == 0 else 0}')
+            self.cur.execute(f"UPDATE groupsettings SET {subject} = {1 if dbManager.GetSettings(self, chat_id)[settings.index(subject)] == 0 else 0} WHERE groupID='Minus{str(chat_id).replace('-', '')}'")
+            self.con.commit()
+
+        else:
+            return 'subject does not exists'
+        
+if __name__ == "__main__":
+    pass

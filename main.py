@@ -8,11 +8,69 @@ import ast
 import requests
 from datetool import calendar
 from datetime import datetime
+import emoji
+import enchant
 dbm = dbManager.dbManager()
 
 #Connect code to your bot
 #app = Client('karaGroupManagement', api_id= your api id, api_hash= 'your api hash', bot_token= 'your bot token')
 app = Client('karaGroupManagement')
+
+bad_words = ['سکس', 'کص', 'کیر']
+
+
+def checkMessage(chat_ID, type):
+    get_settings = dbm.GetSettings(chat_ID)
+    settings = ['imoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']
+    return True if get_settings[settings.index(type)] == 1 else False # Delete message if True 
+
+
+def settingsButtons(chat_id, user_id):
+    settings = dbm.GetSettings(chat_id) 
+    """
+    [0] --> imoji
+    [1] --> link
+    [2] --> git
+    [3] --> sticker
+    [4] --> picture
+    [5] --> video
+    [6] --> music
+    [7] --> file
+    [8] --> englsih
+    [9] --> bad_words
+    0 means disable and 1 means True
+    """
+
+    buttons = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton('ایموجی✅' if settings[0] == 1 else 'ایموجی❌', callback_data = f'imoji-{chat_id}'),
+                InlineKeyboardButton('لینک✅' if settings[1] == 1 else 'لینک❌', callback_data = 'link-{chat_id}')
+            ],
+            [
+                InlineKeyboardButton('گیف✅' if settings[2] == 1 else 'گیف❌', callback_data = f'gif-{chat_id}'),
+                InlineKeyboardButton('استیکر✅' if settings[3] == 1 else 'استیکر❌', callback_data = f'sticker-{chat_id}')
+            ],
+            [
+                InlineKeyboardButton('عکس✅' if settings[4] == 1 else 'عکس❌', callback_data = f'picture-{chat_id}'),
+                InlineKeyboardButton('فیلم✅' if settings[5] == 1 else 'فیلم❌', callback_data = f'video-{chat_id}')
+            ],
+            [
+                InlineKeyboardButton('آهنگ✅' if settings[6] == 1 else 'آهنگ❌', callback_data = f'music-{chat_id}'),
+                InlineKeyboardButton('فایل✅' if settings[7] == 1 else 'فایل❌', callback_data = f'file-{chat_id}')                       
+            ],
+            [
+                InlineKeyboardButton('انگلیسی✅' if settings[8] == 1 else 'انگلیسی❌', callback_data = f'english-{chat_id}'),
+                InlineKeyboardButton('کلمات نامناسب✅' if settings[9] == 1 else 'کلمات نامناسب❌', callback_data = f'bad_words-{chat_id}')
+            ],
+            [
+                InlineKeyboardButton('بازگشت', callback_data = f'back_to_main_menu-{user_id}')
+            ]
+        ]
+    )
+
+    return buttons
+
 
 # the stage where bot is added and becomes an admin
 @app.on_message(filters.service)
@@ -20,6 +78,7 @@ async def services(client, message):
     chatID = dbm.getChatID(message.chat.id)
     # availableGroups is the variable in which the groups that the bot is already added to are listed
     availableGroups = dbm.getAvailableGroupsID()
+    print(availableGroups)
 
     try:
         if message.chat.type != "private":
@@ -27,6 +86,7 @@ async def services(client, message):
             if new_member_status.is_self == True:
                 # checks wheter it was previously added to this group or not 
                 if chatID not in availableGroups:
+                    print("hi")
                     dbm.addToGroupSettings(chatID)
 
                 toBeEditedMessage = await app.send_message(message.chat.id, "ربات به گروه افزوده شد☘️\n\n» جهت آغاز فرآیند نصب و پیکربندی \nربات را ادمین کامل نمایید🌱")
@@ -61,14 +121,13 @@ async def services(client, message):
     # if wetherJoinIsEnabled == 1:
     #     app.delete_messages(chat_id, message_id)
 
+
 @app.on_chat_member_updated()
 async def update_member(client, message):
 
     try:
         if message.old_chat_member != None and message.old_chat_member.privilegs == None:
             pass
-
-            
 
     except AttributeError:
         try:
@@ -96,13 +155,12 @@ async def update_member(client, message):
                                         InlineKeyboardButton('ادامه پیکربندی', url = f'https://t.me/curlymoderaotbot?start=Continue_config_{message.chat.id}')
                                     ],
                                 ]))
+
+                    
                     
                     # removing the first message which was edited to admin confirmation
                     dbm.removeFirstMessageEditID(dbm.getChatID(message.chat.id))
         except errors.exceptions.not_acceptable_406.ChannelPrivate:
-            pass
-
-        except:
             pass
 
 
@@ -128,13 +186,37 @@ async def private(client, message):
         else:
             await app.send_message(message.from_user.id, 'شما دسترسی کافی را برای انجام این کار ندارید.')
 
-
 @app.on_message(filters.text & filters.group)
 async def group_messages(_, message):
     chat_id = message.chat.id
     message_id = message.id
+    user_id = message.from_user.id
     text = message.text
-    theMessage = message.text.split(" ")
+    try:
+        theMessage = message.text.split(" ")
+    except:
+        pass
+
+    if checkMessage(chat_id, 'imoji'):
+        if list(emoji.analyze(f'{text} a')) != []:
+            await app.delete_messages(chat_id, message_id)
+
+    if checkMessage(chat_id, 'link'):
+        if message.entities != None and message.entities[0].type == enums.MessageEntityType.URL:
+          await app.delete_messages(chat_id, message_id)  
+
+    if checkMessage(chat_id, 'english'):
+        d = enchant.Dict("en_US")
+        for word in theMessage:
+            if d.check(word) == False:
+                break
+            else:
+                await app.delete_messages(chat_id, message_id)
+
+    if checkMessage(chat_id, 'bad_words'):
+        for word in theMessage:
+            if word in bad_words:
+                await app.delete_messages(chat_id, message_id)
 
     if theMessage[0] == "تعیین" and theMessage[1] == "موقعیت":
         title = ""
@@ -179,6 +261,7 @@ async def group_messages(_, message):
                     await message.reply(f"موقعیت کاربر {userName} از قبل ذخیره شده است، لطفا برای تغییر موقعیت شغلی از دستور\"تغییر موقعیت\" استفاده کنید❌")
 
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
+    
     elif theMessage[0] == "تغییر" and theMessage[1] == "موقعیت":
         title = ""
         pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
@@ -222,6 +305,7 @@ async def group_messages(_, message):
                     await message.reply(f"موقعیت شغلی‌ای برای کاربر موردنظر ثبت نشده است❌")
 
         dbm.updateUserPositionDict(message.chat.id, positionTitles)
+    
     elif theMessage[0] == "موقعیت" and theMessage[1] == "کاربران":
         pt = dbm.getUserPositionDict(dbm.getChatID(message.chat.id))[0]
         positionTitles = ast.literal_eval(pt) if pt != "" else {}
@@ -263,6 +347,119 @@ async def group_messages(_, message):
         chat = await app.get_chat(chat_id)
         await app.send_message(chat_id, f'نام گروه: {chat.title}\nآیدی عددی گروه: {chat.id}\nتعداد اعضا: {chat.members_count}\nلینک گروه: {chat.invite_link if not chat.invite_link == None else "لینک دعوت وجود ندارد"}', reply_to_message_id = message_id, disable_web_page_preview=True)
 
+    elif text == 'پنل':
+        await app.send_message(chat_id, "لطفا یکی از گزینه های زیر را انتخاب کنید", reply_to_message_id = message_id, reply_markup=InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("تنظیمات", callback_data="setting-%i" % user_id),
+                InlineKeyboardButton("راهنما", callback_data="help-%i" % user_id),
+            ],
+            [
+                InlineKeyboardButton("ارتباط با ما", callback_data="contact_us-%i" % user_id),
+                InlineKeyboardButton('بستن پنل', callback_data='close-%i' % user_id),
+            ]
+        ]
+        ))
+
+
+@app.on_callback_query()
+async def answer(_, callback_query):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data.split('-')
+    inline_id = int(callback_query.message.id)
+
+    if data[0] == 'setting':
+        await app.edit_message_text(chat_id, inline_id, 'به تنظیمات خوش آمدید.', reply_markup = settingsButtons(chat_id, data[1]))
+
+    elif data[0] == 'help':
+        await app.edit_message_text(chat_id, inline_id, 'به بخش راهنماخوش آمدید', reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('بازگشت', callback_data = f'back_to_main_menu-{data[1]}')
+                ]
+            ]
+        ))
+
+    elif data[0] == 'contact_us':
+        await app.edit_message_text(chat_id, inline_id, 'به بخش درباره ما خوش آمدید.', reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton('بازگشت', callback_data = f'back_to_main_menu-{data[1]}')
+                ]
+            ]
+        ))
+
+    elif data[0] == 'close':
+        await app.edit_message_text(chat_id, inline_id, 'پنل با موفقیت بسته شد✅')
+
+    elif data[0] == 'back_to_main_menu':
+        await app.edit_message_text(chat_id, inline_id, "لطفا یکی از گزینه های زیر را انتخاب کنید", reply_markup=InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("تنظیمات", callback_data="setting-%s" % data[1]),
+                InlineKeyboardButton("راهنما", callback_data="help-%s" % data[1]),
+            ],
+            [
+                InlineKeyboardButton("ارتباط با ما", callback_data="contact_us-%s" % data[1]),
+                InlineKeyboardButton('بستن پنل', callback_data='close-%s' % data[1]),
+            ]
+        ]
+        ))
+
+    elif data[0] in ['imoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']:
+        dbm.UpdateSettins(chat_id, data[0])
+        await app.edit_message_text(chat_id, inline_id, 'به تنظیمات خوش آمدید.', reply_markup = settingsButtons(chat_id, data[1]))
+
+
+# -------------------- Check settings to delete or keep messages ------------------------------ #
+@app.on_message(filters.photo)
+async def photos(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    user_id = message.from_user.id
+    if checkMessage(chat_id, 'picture'):
+        await app.delete_messages(chat_id, message_id)
+
+@app.on_message(filters.sticker)
+async def photos(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    user_id = message.from_user.id
+    if checkMessage(chat_id, 'sticker'):
+        await app.delete_messages(chat_id, message_id)
+
+@app.on_message(filters.video)
+async def photos(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    user_id = message.from_user.id
+    if checkMessage(chat_id, 'video'):
+        await app.delete_messages(chat_id, message_id)
+
+@app.on_message(filters.audio)
+async def photos(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    user_id = message.from_user.id
+    if checkMessage(chat_id, 'music'):
+        await app.delete_messages(chat_id, message_id)
+
+@app.on_message(filters.document)
+async def photos(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    user_id = message.from_user.id
+    if checkMessage(chat_id, 'file'):
+        await app.delete_messages(chat_id, message_id)
+
+@app.on_message(filters.animation)
+async def photos(_, message):
+    chat_id = message.chat.id
+    message_id = message.id
+    user_id = message.from_user.id
+    if checkMessage(chat_id, 'gif'):
+        await app.delete_messages(chat_id, message_id)
+# --------------------------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
     print('Bot is starting ...')

@@ -1,5 +1,7 @@
 env/
 KaraGroups.db
 karaGroupManagement.session
+karaGroupManagement.session-journal
 credentials.txt
 *.bak
+__pycache__/
