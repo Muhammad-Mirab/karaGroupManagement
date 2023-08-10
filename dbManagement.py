@@ -59,3 +59,17 @@ class dbManager:
     def GetSettings(self, chat_ID):
         self.cur.execute(f"SELECT *  FROM  groupSettings Where groupID='Minus{str(chat_ID).replace('-', '')}'")
         return self.cur.fetchall()[0][4:]
+    
+    def UpdateSettins(self, chat_id, subject):
+        settings = ['imoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']
+        if subject in settings:
+            # print(dbManager.GetSettings(self, chat_id)[settings.index(subject)])
+            # print(f'{1 if dbManager.GetSettings(self, chat_id)[settings.index(subject) - 4] == 0 else 0}')
+            self.cur.execute(f"UPDATE groupsettings SET {subject} = {1 if dbManager.GetSettings(self, chat_id)[settings.index(subject)] == 0 else 0} WHERE groupID='Minus{str(chat_id).replace('-', '')}'")
+            self.con.commit()
+
+        else:
+            return 'subject does not exists'
+        
+if __name__ == "__main__":
+    pass
