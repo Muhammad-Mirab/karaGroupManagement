@@ -16,7 +16,7 @@ dbm = dbManager.dbManager()
 #app = Client('karaGroupManagement', api_id= your api id, api_hash= 'your api hash', bot_token= 'your bot token')
 app = Client('karaGroupManagement')
 
-bad_words = ['سکس', 'کص', 'کیر']
+bad_words = ['احمق', 'بیشعور', 'روانی']
 
 
 def checkMessage(chat_ID, type):
