@@ -5,3 +5,6 @@ karaGroupManagement.session-journal
 credentials.txt
 *.bak
 __pycache__/
+*.mp4
+*.raw
+test.py

@@ -21,14 +21,14 @@ bad_words = ['احمق', 'بیشعور', 'روانی']
 
 def checkMessage(chat_ID, type):
     get_settings = dbm.GetSettings(chat_ID)
-    settings = ['imoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']
+    settings = ['emoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']
     return True if get_settings[settings.index(type)] == 1 else False # Delete message if True 
 
 
 def settingsButtons(chat_id, user_id):
     settings = dbm.GetSettings(chat_id) 
     """
-    [0] --> imoji
+    [0] --> emoji   
     [1] --> link
     [2] --> git
     [3] --> sticker
@@ -44,7 +44,7 @@ def settingsButtons(chat_id, user_id):
     buttons = InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton('ایموجی✅' if settings[0] == 1 else 'ایموجی❌', callback_data = f'imoji-{chat_id}'),
+                InlineKeyboardButton('ایموجی✅' if settings[0] == 1 else 'ایموجی❌', callback_data = f'emoji-{chat_id}'),
                 InlineKeyboardButton('لینک✅' if settings[1] == 1 else 'لینک❌', callback_data = 'link-{chat_id}')
             ],
             [
@@ -86,7 +86,6 @@ async def services(client, message):
             if new_member_status.is_self == True:
                 # checks wheter it was previously added to this group or not 
                 if chatID not in availableGroups:
-                    print("hi")
                     dbm.addToGroupSettings(chatID)
 
                 toBeEditedMessage = await app.send_message(message.chat.id, "ربات به گروه افزوده شد☘️\n\n» جهت آغاز فرآیند نصب و پیکربندی \nربات را ادمین کامل نمایید🌱")
@@ -197,8 +196,9 @@ async def group_messages(_, message):
     except:
         pass
 
-    if checkMessage(chat_id, 'imoji'):
+    if checkMessage(chat_id, 'emoji'):
         if list(emoji.analyze(f'{text} a')) != []:
+            print("sjdfnksjdnks")
             await app.delete_messages(chat_id, message_id)
 
     if checkMessage(chat_id, 'link'):
@@ -406,13 +406,13 @@ async def answer(_, callback_query):
         ]
         ))
 
-    elif data[0] in ['imoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']:
+    elif data[0] in ['emoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']:
         dbm.UpdateSettins(chat_id, data[0])
         await app.edit_message_text(chat_id, inline_id, 'به تنظیمات خوش آمدید.', reply_markup = settingsButtons(chat_id, data[1]))
 
 
 # -------------------- Check settings to delete or keep messages ------------------------------ #
-@app.on_message(filters.photo)
+@app.on_message(filters.photo & filters.group)
 async def photos(_, message):
     chat_id = message.chat.id
     message_id = message.id
@@ -420,7 +420,7 @@ async def photos(_, message):
     if checkMessage(chat_id, 'picture'):
         await app.delete_messages(chat_id, message_id)
 
-@app.on_message(filters.sticker)
+@app.on_message(filters.sticker & filters.group)
 async def photos(_, message):
     chat_id = message.chat.id
     message_id = message.id
@@ -428,7 +428,7 @@ async def photos(_, message):
     if checkMessage(chat_id, 'sticker'):
         await app.delete_messages(chat_id, message_id)
 
-@app.on_message(filters.video)
+@app.on_message(filters.video & filters.group)
 async def photos(_, message):
     chat_id = message.chat.id
     message_id = message.id
@@ -436,7 +436,7 @@ async def photos(_, message):
     if checkMessage(chat_id, 'video'):
         await app.delete_messages(chat_id, message_id)
 
-@app.on_message(filters.audio)
+@app.on_message(filters.audio & filters.group)
 async def photos(_, message):
     chat_id = message.chat.id
     message_id = message.id
@@ -444,7 +444,7 @@ async def photos(_, message):
     if checkMessage(chat_id, 'music'):
         await app.delete_messages(chat_id, message_id)
 
-@app.on_message(filters.document)
+@app.on_message(filters.document & filters.group)
 async def photos(_, message):
     chat_id = message.chat.id
     message_id = message.id
@@ -452,7 +452,7 @@ async def photos(_, message):
     if checkMessage(chat_id, 'file'):
         await app.delete_messages(chat_id, message_id)
 
-@app.on_message(filters.animation)
+@app.on_message(filters.animation & filters.group)
 async def photos(_, message):
     chat_id = message.chat.id
     message_id = message.id
