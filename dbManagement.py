@@ -5,10 +5,11 @@ class dbManager:
     def __init__(self) -> None:
         self.con = sqlite3.connect("KaraGroups.db", check_same_thread = False)
         self.cur = self.con.cursor()
-        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, isWelcomeEnabled STRING, welcomeMessage STRING, userPositions STRING, emoji INTEGER, link INTEGER, gif INTEGER, sticker INTEGER, picture INTEGER, video INTEGER, music INTEGER, file INTEGER, english INTEGER, bad_words INTEGER)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS groupSettings(groupID STRING, admins STRING, isWelcomeEnabled STRING, welcomeMessage STRING, userPositions STRING, emoji INTEGER, link INTEGER, gif INTEGER, sticker INTEGER, picture INTEGER, video INTEGER, music INTEGER, file INTEGER, english INTEGER, bad_words INTEGER)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS firstMessageQueue(chatID STRING, messageID STRING)")
         # self.cur.execute("INSERT OR IGNORE INTO groupSettings(groupID, welcomeMessage) VALUES ('1', 'سلام، همکار / دوست گرامی [یوزر جدید] به تیم [اسم گروه] خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)') ")
         # self.con.commit()
+    
     # converts numeral chat id into sth the database can handle
     def getChatID(self, groupId):
         chat_idDB = str(groupId).split("-")
@@ -48,7 +49,7 @@ class dbManager:
         defaultIsWelcomeEnabled = 1
         defaultWelcomeMessage = f'سلام، همکار / دوست گرامی [کاربر] به تیم خوش اومدی🌹 \n من ربات کارا هستم، یک ربات مدیریت گروه و پروژه از راه دور که میتونی از طریق دکمه زیر باهاش آشنا بشی و طرز کار باهاش رو یاد بگیری :)'
         userPositions = {}
-        self.cur.execute(f"INSERT or IGNORE INTO groupSettings VALUES ('{groupID}', {defaultIsWelcomeEnabled}, '{defaultWelcomeMessage}', '{str(userPositions)}', 1, 1, 1, 1, 1, 1, 0, 0, 1, 0)")
+        self.cur.execute(f"INSERT or IGNORE INTO groupSettings VALUES ('{groupID}', 'No one', {defaultIsWelcomeEnabled}, '{defaultWelcomeMessage}', '{str(userPositions)}', 1, 1, 1, 1, 1, 1, 0, 0, 1, 0)")
         self.con.commit()
 
     # using the chatID and attribute(which is the name of the value in db e.g. "isWelcomeEnabled") will check if the admin has disabled a feature
@@ -56,10 +57,15 @@ class dbManager:
         self.cur.execute(f"SELECT {attribute} FROM groupSettings WHERE groupID='{chatID}'")
         return [i[0] for i in self.cur.fetchall()]
 
+    #Just return settings values
     def GetSettings(self, chat_ID):
         self.cur.execute(f"SELECT *  FROM  groupSettings Where groupID='{self.getChatID(chat_ID)}'")
         return self.cur.fetchall()[0][4:]
     
+    def GetAllValues(self, chat_ID):
+        self.cur.execute(f"SELECT *  FROM  groupSettings Where groupID='{self.getChatID(chat_ID)}'")
+        return self.cur.fetchall()[0]
+
     def UpdateSettins(self, chat_id, subject):
         settings = ['emoji', 'link', 'gif', 'sticker', 'picture', 'video', 'music', 'file', 'english', 'bad_words']
         if subject in settings:
@@ -70,6 +76,10 @@ class dbManager:
 
         else:
             return 'subject does not exists'
-        
+    
+    def AddAdmins(self, chat_id, Admins):
+        self.cur.execute(f"UPDATE groupsettings SET admins = '{Admins}' WHERE groupID='Minus{str(chat_id).replace('-', '')}'")
+        self.con.commit()
+
 if __name__ == "__main__":
     pass
