@@ -10,6 +10,7 @@ from datetool import calendar
 from datetime import datetime
 import emoji
 import enchant
+import os
 dbm = dbManager.dbManager()
 
 #Connect code to your bot
@@ -78,7 +79,6 @@ async def services(client, message):
     chatID = dbm.getChatID(message.chat.id)
     # availableGroups is the variable in which the groups that the bot is already added to are listed
     availableGroups = dbm.getAvailableGroupsID()
-    print(availableGroups)
 
     try:
         if message.chat.type != "private":
@@ -89,7 +89,7 @@ async def services(client, message):
                     dbm.addToGroupSettings(chatID)
 
                 toBeEditedMessage = await app.send_message(message.chat.id, "ربات به گروه افزوده شد☘️\n\n» جهت آغاز فرآیند نصب و پیکربندی \nربات را ادمین کامل نمایید🌱")
-                
+                dbm.AddAdmins(message.chat.id, f'{message.from_user.id} ')
                 # the message is saved so that it can later be edited as a confirmation that bot has been upgraded to admin
                 dbm.firstMessageEditID(chatID, toBeEditedMessage.id)
     except:
@@ -135,19 +135,23 @@ async def update_member(client, message):
             if message.chat.type == enums.ChatType.CHANNEL:
                 if member.status == enums.ChatMemberStatus.ADMINISTRATOR and message.new_chat_member.privileges.can_post_messages:
                     await app.send_message(message.new_chat_member.promoted_by.id, 'ربات با موفقیت در کانال ادمین شد')
-                
+
                 elif not message.new_chat_member.privileges.can_post_messages:
                     await app.send_message(message.new_chat_member.promoted_by.id, 'لطفا ابتدا ربات را از کانال حذف و دوباره اضافه کنید و توجه کنید که باید هنگام اضافه کردن ربات به کانال دسترسی ارسال پیام را به ربات بدهید.')
 
             elif message.chat.type == enums.ChatType.GROUP or message.chat.type == enums.ChatType.SUPERGROUP:
                 if member.status == enums.ChatMemberStatus.ADMINISTRATOR and member.user == message.new_chat_member.user:
                     final = ''
-                    
+                    admins = ''
+
                     # getting the admin users to display them in the message
                     async for i in app.get_chat_members(message.chat.id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
                         if not i.user.is_self:
-                            final += '[%s](tg://user?id=%i)\n' % (i.user.first_name, i.user.id)
-                            
+                            final += '[%s](tg://useir?d=%i)\n' % (i.user.first_name, i.user.id)
+                            if i.user.id != dbm.GetAllValues(message.chat.id)[1]:
+                                admins += '%s ' % str(i.user.id)
+
+                    dbm.AddAdmins(message.chat.id, f'{dbm.GetAllValues(message.chat.id)[1]} {admins}')
                     await app.edit_message_text(message.chat.id, int(dbm.getFirstMessageEditID(dbm.getChatID(message.chat.id))[0]), 'ربات با موفقیت در گروه فعال شد.\n\n ادمین های شناسایی شده:\n%s' % final, reply_markup=InlineKeyboardMarkup(
                                 [
                                     [
@@ -185,6 +189,7 @@ async def private(client, message):
         else:
             await app.send_message(message.from_user.id, 'شما دسترسی کافی را برای انجام این کار ندارید.')
 
+
 @app.on_message(filters.text & filters.group)
 async def group_messages(_, message):
     chat_id = message.chat.id
@@ -198,7 +203,6 @@ async def group_messages(_, message):
 
     if checkMessage(chat_id, 'emoji'):
         if list(emoji.analyze(f'{text} a')) != []:
-            print("sjdfnksjdnks")
             await app.delete_messages(chat_id, message_id)
 
     if checkMessage(chat_id, 'link'):
@@ -361,7 +365,43 @@ async def group_messages(_, message):
         ]
         ))
 
+    elif text == 'ادمین ها':
+        await app.send_message(chat_id, dbm.GetAllValues(chat_id)[1], reply_to_message_id = message_id)
 
+    elif theMessage[0] == 'تعیین' and theMessage[1] == 'مالک' and theMessage[2] == 'تیم' and len(theMessage) == 4:    
+        try:
+            await app.get_users(theMessage[3])
+            final = ['Reserved']
+            async for i in app.get_chat_members(message.chat.id, filter=enums.ChatMembersFilter.ADMINISTRATORS):
+                if not i.user.is_self:
+                    if i.user.id != theMessage[-1]:
+                        final.append(str(i.user.id))
+            final[0] = theMessage[-1]
+            dbm.AddAdmins(chat_id, ' '.join(final))
+            tags = ''
+            for id in final[1:]:
+                user_info = await app.get_users(id)
+                tags += '[%s](tg://useir?d=%s)\n' % (user_info.first_name, id)
+
+            owner_info = await app.get_users(final[0])
+            await app.send_message(chat_id, f'مالک تیم با موفقیت تعیین شد.\nمالک: \n[{owner_info.first_name}](tg://useir?d={final[0]})\n\n ادمین ها: \n{tags}')
+
+        except errors.exceptions.bad_request_400.UsernameInvalid:
+            await app.send_message(chat_id, 'لطفا در اخر پیام ایدی عددی شخصی که قصد دارید به عنوان مالک تعیین کنید را بفرستید.\nشما میتوانید با استفاده از دستور "پروفایل" ایدی عددی شخص مورد نظر رو ببینید..', reply_to_message_id = message_id)
+
+    elif text == 'پروفایل':
+        replyed = message.reply_to_message.from_user
+        count = await app.get_chat_photos_count(replyed.id)
+        if count != 0:
+            async for photo in app.get_chat_photos(replyed.id):
+                success = await app.download_media(photo.file_id, f'downloads\{photo.file_unique_id}.jpg')
+                print(success)
+                await app.send_photo(chat_id, f'downloads\{photo.file_unique_id}.jpg', f'نام اکانت: {replyed.first_name}\nنام کاربری: {replyed.username}\nایدی عددی: {replyed.id}\nتعداد پروفایل: {count}', reply_to_message_id = message_id)
+                os.remove(f'downloads\{photo.file_unique_id}.jpg')
+                break
+        else:
+            await app.send_photo(chat_id, 'downloads/user.png', f'نام اکانت: {replyed.first_name}\nنام کاربری: {replyed.username}\nایدی عددی: {replyed.id}\nتعداد پروفایل: {count}', reply_to_message_id = message_id)
+                
 @app.on_callback_query()
 async def answer(_, callback_query):
     chat_id = callback_query.message.chat.id
